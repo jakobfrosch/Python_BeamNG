@@ -242,7 +242,7 @@ def parse_conditions_from_xml(xml_path):
 
 
 def main():
-    xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle.xosc"  # Pfad zur XML-Datei
+    xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"  # Pfad zur XML-Datei
     conditions = parse_conditions_from_xml(xml_path)
 
     # Drucke die extrahierten Conditions
