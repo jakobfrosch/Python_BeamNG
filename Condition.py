@@ -1,7 +1,6 @@
 import xml.etree.ElementTree as ET
 
 class BaseCondition:
- #   def __init__(self, condition_type):
     def __init__(self, condition_type, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
 
         self.condition_type = condition_type
@@ -122,46 +121,6 @@ class ParameterCondition(BaseCondition):
     def __str__(self):
         return f"Parameter Condition: (Main Condition Type: {self.main_condition_type}, Condition Type Type: {self.condition_type_type}, Main Entity Ref: {self.mainEntityRef}, Triggering Entities: {self.triggeringEntities}), Parameter Ref = {self.parameterRef}, Value = {self.value}, Rule = {self.rule}"
 
-# Beispiel-Nutzung
-#time_condition = TimeOfDayCondition(8, 18)
-#speed_condition = SpeedCondition(50, ">")
-#relative_distance_condition = RelativeDistanceCondition(entity_ref="adversary", relative_distance_type="longitudinal", value=40.0, freespace=True, rule="lessThan")
-#traveled_distance_condition = TraveledDistanceCondition(value=200.0)
-#simulation_time_condition = SimulationTimeCondition(value=0, rule="equalTo")
-
-# Überprüfen der Bedingungen
-# (Hier müssten Sie die entsprechenden aktuellen Werte einfügen)
-#current_time = 12
-#current_speed = 60
-#current_distance = 30.0
-#traveled_distance = 150.0
-
-#if time_condition.check_condition(current_time):
-#    print("Time of day condition met")
-#else:
-#    print("Time of day condition not met")
-
-#if speed_condition.check_condition(current_speed):
-#    print("Speed condition met")
-#else:
-#    print("Speed condition not met")
-
-#if relative_distance_condition.check_condition(current_distance):
-#    print("Relative distance condition met")
-#else:
-#    print("Relative distance condition not met")
-
-#if traveled_distance_condition.check_condition(traveled_distance):
-#    print("Traveled distance condition met")
-#else:
-#    print("Traveled distance condition not met")
-
-# Hier würden Sie auch die SimulationTimeCondition überprüfen,
-# aber da sie auf die Simulationszeit bezogen ist, benötigen Sie Zugriff auf die aktuelle Simulationszeit.
-# Das gleiche gilt für die StopTrigger-Bedingungen, die Parameterbedingungen erfordern,
-# die von externen Parametern abhängen, die in der Simulation aktualisiert werden müssen.
-
-
 def parse_conditions_from_xml(xml_path):
     conditions = []
 
@@ -169,7 +128,6 @@ def parse_conditions_from_xml(xml_path):
     root = tree.getroot()
     condition_type_types = ['ByValueCondition','EntityCondition']
 
-    # Iteriere über alle Elemente im XML, um Conditions zu finden
     for element in root.iter('Condition'):
         main_condition_type = element.attrib.get('name')
 
@@ -201,8 +159,6 @@ def parse_conditions_from_xml(xml_path):
                                 condition_params2[key] = value
 
 
-
-        # Erstelle die entsprechende Condition-Instanz basierend auf dem Typ
         if condition_type2 == 'TimeOfDayCondition':
             start_time = float(condition_params.get('startTime'))
             end_time = float(condition_params.get('endTime'))
@@ -232,7 +188,6 @@ def parse_conditions_from_xml(xml_path):
             rule = condition_params2.get('rule')
             condition = ParameterCondition(parameterRef, value, rule, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
         else:
-            # Wenn der Condition-Typ nicht erkannt wird, überspringe ihn
             print(condition_type2)
             continue
 
@@ -242,7 +197,7 @@ def parse_conditions_from_xml(xml_path):
 
 
 def main():
-    xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"  # Pfad zur XML-Datei
+    xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"
     conditions = parse_conditions_from_xml(xml_path)
 
     # Drucke die extrahierten Conditions
