@@ -12,16 +12,15 @@ from beamngpy.sensors import RoadsSensor
 
 import xml.etree.ElementTree as ET
 
-import readXML
+import Weather
 from Condition import parse_conditions_from_xml
-from readXML import Weather
 # Instantiate BeamNGpy instance running the simulator from the given path,
 # communicating over localhost:64256
 parameters = sys.argv[2:]
 
 # Gib die Übergabeparameter aus
 print("Jakob Test2")
-#print (sys.argv[2])
+print (sys.argv[2])
 dis=0
 xml_file_path = "C:\\Users\\Stefan\\PedestrianCrossingFront.xosc"
 conditions = parse_conditions_from_xml(xml_file_path)
@@ -68,7 +67,7 @@ vehicle2.ai.set_waypoint('Bridge23_1')
 vehicle.ai.drive_in_lane(True)
 bng.scenario.start()
 vehicle.ai.set_mode('span')
-
+vehicle.ai.set_waypoint()
 lidar = Lidar('lidar1', bng, vehicle, requested_update_time=0.01, is_using_shared_memory=False)
 radar = Radar('radar1', bng, vehicle, requested_update_time=0.01)
 state = State()
@@ -119,7 +118,7 @@ print(f"TimeOfDay_dateTime: {weather.time_of_day}")
 
 # Beispiel für die Verwendung der saveWeather-Methode
 weather.saveWeather()
-#bng.env.set_tod(readXML.weather.time_of_day)
+bng.env.set_tod(weather.time_of_day)
 bng.env.set_weather_preset("sunny")
 #bng.traffic.spawn()
 #vehicle.ai_set_aggression

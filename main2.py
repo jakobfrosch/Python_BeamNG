@@ -12,8 +12,8 @@ from beamngpy.sensors import RoadsSensor
 
 import xml.etree.ElementTree as ET
 
-import readXML
-from readXML import Weather
+import Weather
+from Weather import Weather
 # Instantiate BeamNGpy instance running the simulator from the given path,
 # communicating over localhost:64256
 parameters = sys.argv[2:]

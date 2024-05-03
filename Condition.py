@@ -47,29 +47,47 @@ class SpeedCondition(BaseCondition):
     def __str__(self):
         return f"Speed Condition: Value = {self.value}, Comparison Operator = {self.comparison_operator}"
 
+class ReachPositionCondition(BaseCondition):
+    def __init__(self, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type, tolerance, position):
+        super().__init__("ReachPosition", condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
+        self.tolerance = tolerance
+        self.position = position
 
+    def check_condition(self, current_position):
+        # Check if the current position is within the tolerance range of the target position
+        return abs(current_position - self.position) <= self.tolerance
+
+    def __str__(self):
+        return f"Reach Position Condition: (Main Condition Type: {self.main_condition_type}, Condition Type Type: {self.condition_type_type}, Main Entity Ref: {self.mainEntityRef}, Triggering Entities: {self.triggeringEntities}), Tolerance = {self.tolerance}, Target Position = {self.position}"
+
+def parse_position_from_xml(position_element):
+    x = float(position_element.get('x'))
+    y = float(position_element.get('y'))
+    z = float(position_element.get('z'))
+    h = float(position_element.get('h'))
+    return (x, y, z, h)
 class RelativeDistanceCondition(BaseCondition):
-    def __init__(self, entity_ref, relative_distance_type, value, freespace, rule, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
+    def __init__(self, entity_ref, relative_distance_type, value, freespace, rule, delay, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
         super().__init__("RelativeDistance", condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
         self.entity_ref = entity_ref
         self.relative_distance_type = relative_distance_type
         self.value = value
         self.freespace = freespace
         self.rule = rule
+        self.delay = delay
 
     def check_condition(self, current_distance, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
         if self.rule == "lessThan":
-            return current_distance < self.value
+            return current_distance < self.value + self.delay
         elif self.rule == "greaterThan":
-            return current_distance > self.value
+            return current_distance > self.value + self.delay
         elif self.rule == "equalTo":
-            return current_distance == self.value
+            return current_distance == self.value + self.delay
         else:
             raise ValueError("Invalid rule for RelativeDistanceCondition")
 
     def __str__(self):
-        return f"Relative Distance Condition: (Main Condition Type: {self.main_condition_type} Condition Type Type: {self.condition_type_type} Main Entity Ref: {self.mainEntityRef} Triggering Entities: {self.triggeringEntities}) Entity Ref = {self.entity_ref}, Relative Distance Type = {self.relative_distance_type}, Value = {self.value}, Freespace = {self.freespace}, Rule = {self.rule}"
-
+        return f"Relative Distance Condition: (Main Condition Type: {self.main_condition_type} Condition Type Type: {self.condition_type_type} Main Entity Ref: {self.mainEntityRef} Triggering Entities: {self.triggeringEntities}) Entity Ref = {self.entity_ref}, Relative Distance Type = {self.relative_distance_type}, Value = {self.value}, Freespace = {self.freespace}, Rule = {self.rule}, Delay = {self.delay}"
 
 class TraveledDistanceCondition(BaseCondition):
     def __init__(self, value, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
@@ -101,6 +119,18 @@ class SimulationTimeCondition(BaseCondition):
 
     def __str__(self):
         return f"Simulation Time Condition: (Main Condition Type: {self.main_condition_type} Condition Type Type: {self.condition_type_type} Main Entity Ref: {self.mainEntityRef} Triggering Entities: {self.triggeringEntities}) Value = {self.value}, Rule = {self.rule}"
+class StoryboardElementStateCondition(BaseCondition):
+    def __init__(self, storyboardElementType, storyboardElementRef, state, delay, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
+        super().__init__("StoryboardElementState", condition_type_type, mainEntityRef, triggeringEntities,
+                         main_condition_type)
+        self.storyboardElementType = storyboardElementType
+        self.storyboardElementRef = storyboardElementRef
+        self.state = state
+        self.delay = delay
+        print(self.storyboardElementType)
+    def __str__(self):
+        return f"Storyboard Element State Condition: (Main Condition Type: {self.main_condition_type}, Condition Type Type: {self.condition_type_type}, Main Entity Ref: {self.mainEntityRef}, Triggering Entities: {self.triggeringEntities}), storyboardElementType = {self.storyboardElementType}, storyboardElementRef = {self.storyboardElementRef}, state = {self.state}"
+
 
 class ParameterCondition(BaseCondition):
     def __init__(self, parameterRef, value, rule, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
@@ -126,19 +156,19 @@ def parse_conditions_from_xml(xml_path):
 
     tree = ET.parse(xml_path)
     root = tree.getroot()
-    condition_type_types = ['ByValueCondition','EntityCondition']
+    condition_type_types = ['ByValueCondition', 'EntityCondition']
 
     for element in root.iter('Condition'):
         main_condition_type = element.attrib.get('name')
 
-        mainEntityRef=element.find(".//EntityRef")
+        mainEntityRef = element.find(".//EntityRef")
         if mainEntityRef is not None:
-            mainEntityRef=mainEntityRef.attrib.get('entityRef')
+            mainEntityRef = mainEntityRef.attrib.get('entityRef')
         condition_type_type = None
         for elem in element.iter():
             if elem.tag != "Condition":
                 condition_type_type = elem
-                triggeringEntities=elem.find("./TriggeringEntities")
+                triggeringEntities = elem.find("./TriggeringEntities")
                 if triggeringEntities is not None:
                     triggeringEntities = triggeringEntities.get("triggeringEntitiesRule")
                 break
@@ -153,11 +183,15 @@ def parse_conditions_from_xml(xml_path):
             for node in element.iter(condition_type_type):
                 for node2 in node:
                     if node2.tag.endswith('Condition'):
-                        condition_type2=node2.tag
+                        condition_type2 = node2.tag
                         for key, value in node2.items():
                             if key != 'name':
                                 condition_params2[key] = value
-
+                        delay = 0  # Standardwert für das Delay
+                        delay_element = node2.find('StartTrigger/ConditionGroup/Condition')
+                        if delay_element is not None and 'delay' in delay_element.attrib:
+                            delay = int(delay_element.attrib['delay'])
+                        condition_params2['delay'] = delay
 
         if condition_type2 == 'TimeOfDayCondition':
             start_time = float(condition_params.get('startTime'))
@@ -173,20 +207,39 @@ def parse_conditions_from_xml(xml_path):
             value = float(condition_params2.get('value'))
             freespace = condition_params2.get('freespace') == 'true'
             rule = condition_params2.get('rule')
-            condition = RelativeDistanceCondition(entity_ref, relative_distance_type, value, freespace, rule, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
-
+            delay = int(condition_params2.get('delay', '0'))
+            condition = RelativeDistanceCondition(entity_ref, relative_distance_type, value, freespace, rule, delay,
+                                                  condition_type_type, mainEntityRef, triggeringEntities,
+                                                  main_condition_type)
         elif condition_type2 == 'TraveledDistanceCondition':
             value = float(condition_params2.get('value'))
-            condition = TraveledDistanceCondition(value, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
+            condition = TraveledDistanceCondition(value, condition_type_type, mainEntityRef, triggeringEntities,
+                                                  main_condition_type)
+        elif condition_type2 == 'ReachPositionCondition':
+            position_element = node2.find('.//Position/WorldPosition')
+            position = parse_position_from_xml(position_element)
+            tolerance = float(condition_params2.get('tolerance'))
+            condition = ReachPositionCondition(condition_type_type, mainEntityRef, triggeringEntities,
+                                                main_condition_type,tolerance, position)
         elif condition_type2 == 'SimulationTimeCondition':
             value = float(condition_params2.get('value'))
             rule = condition_params2.get('rule')
-            condition = SimulationTimeCondition(value, rule, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
+            condition = SimulationTimeCondition(value, rule, condition_type_type, mainEntityRef, triggeringEntities,
+                                                main_condition_type)
         elif condition_type2 == 'ParameterCondition':
             parameterRef = condition_params2.get('parameterRef')
             value = condition_params2.get('value')
             rule = condition_params2.get('rule')
-            condition = ParameterCondition(parameterRef, value, rule, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
+            condition = ParameterCondition(parameterRef, value, rule, condition_type_type, mainEntityRef,
+                                           triggeringEntities, main_condition_type)
+        elif condition_type2 == 'StoryboardElementStateCondition':
+            storyboardElementType = condition_params2.get('storyboardElementType')
+            storyboardElementRef = condition_params2.get('storyboardElementRef')
+            state = condition_params2.get('state')
+            delay = int(condition_params2.get('delay', '0'))
+            condition = StoryboardElementStateCondition(storyboardElementType, storyboardElementRef, state, delay,
+                                                        condition_type_type, mainEntityRef, triggeringEntities,
+                                                        main_condition_type)
         else:
             print(condition_type2)
             continue
@@ -196,8 +249,10 @@ def parse_conditions_from_xml(xml_path):
     return conditions
 
 
+
 def main():
     xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"
+    xml_path2 = "C:\\Users\\stefan\\Documents\\PedestrianCrossingFront.xosc"
     conditions = parse_conditions_from_xml(xml_path)
 
     # Drucke die extrahierten Conditions
