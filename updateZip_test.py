@@ -45,7 +45,7 @@ def extend_file_in_zip(zipname, filename, additional_data):
 
 
 # Beispielaufruf
-name = 'rainy4'
+name = 'rainy6'
 time_value = 0.80
 num_drops_value = 700
 

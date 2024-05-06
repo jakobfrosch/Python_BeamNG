@@ -1,6 +1,7 @@
 import os
 import shutil
 import zipfile
+from Weather import Weather
 def remove_last_character(filepath):
     with open(filepath, 'r+') as file:
         file.seek(0, os.SEEK_END)
@@ -33,13 +34,23 @@ def extend_file_in_zip(zipname, filename, additional_data):
 
     # Temporären Ordner löschen
     shutil.rmtree(temp_dir)
+def fillWeatherInXML(weather):
+    cloudy = ["cloudy", "overcast", "rainy"]
+    time_value=weather.time_of_day
+    name = "xml_weather"
+    maxRaindrops = 1000
+    num_drops_value = "0"
+    maxFogDensity = 20000
+    fogDensity = 0
+    if weather.cloud_state in cloudy:
+        cloudLayerCoverage = "1"
+    else:
+        cloudLayerCoverage = "0"
+    if weather.precipitation_type == "rain":
+        num_drops_value = str(float(weather.precipitation_intensity)*maxRaindrops)
+    fogDensity = str(maxFogDensity/float(weather.fog_visualRange))
 
-# Beispielaufruf
-name = 'rainy4'
-time_value = 0.80
-num_drops_value = 700
-
-additional_data = f'''
+    additional_data = f'''
 "{name}": {{
     "TimeOfDay": {{
       "time": {time_value}
@@ -48,10 +59,10 @@ additional_data = f'''
       "numDrops": {num_drops_value}
     }},
     "CloudLayer": {{
-      "coverage": 1
+      "coverage": {cloudLayerCoverage}
     }},
     "LevelInfo": {{
-      "fogDensity": 0.005
+      "fogDensity": {fogDensity}
     }},
     "ScatterSky": {{
       "shadowSoftness": 1,
@@ -65,4 +76,6 @@ additional_data = f'''
     }}
   }}
 }}'''
-extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip', 'art\\weather\\defaults.json', additional_data)
+    extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
+                       'art\\weather\\defaults.json', additional_data)
+

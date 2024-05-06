@@ -1,4 +1,5 @@
 import math
+import os
 import random
 from time import sleep
 from beamngpy import BeamNGpy, Scenario, Vehicle, Road
@@ -16,8 +17,9 @@ from Condition import parse_conditions_from_xml
 from Vehicle import extract_vehicle_objects
 from Event import parse_events_from_xml
 from Act import parse_acts_from_xml
-from Weather import Weather
-from updateZIP import extend_file_in_zip
+from Weather import Weather, extract_weather_info
+from updateZIP import extend_file_in_zip, fillWeatherInXML
+
 vehicles = []
 
 def extract_Parameter(file_path):
@@ -34,6 +36,25 @@ def extract_Parameter(file_path):
         parameter_declarations[name] = {'type': param_type, 'value': value}
 
     return parameter_declarations
+def replace_Parameter(input_file_path, parameter_declarations):
+    file_name, file_extension = os.path.splitext(input_file_path)
+    output_file_path = file_name + '_repl_para' + file_extension
+    # Lese den Inhalt der Eingabedatei
+    with open(input_file_path, 'r') as file:
+        content = file.read()
+
+    # Ersetze die Parameter im Text
+    for name, param in parameter_declarations.items():
+        content = content.replace('$' + name, str(param['value']))
+
+    # Dateinamen für die Ausgabedatei generieren
+    #output_file_path = input_file_path.replace('.xml', '_repl_para.xml')
+
+    # Schreibe den aktualisierten Text in die Ausgabedatei
+    with open(output_file_path, 'w') as file:
+        file.write(content)
+
+    return output_file_path
 
 xml_file_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle3.xosc"
 parameters = sys.argv[2:]
@@ -45,14 +66,30 @@ acts = parse_acts_from_xml(xml_file_path)
 scenario_objects = extract_vehicle_objects(xml_file_path)
 events = parse_events_from_xml(xml_file_path)
 parameters = extract_Parameter(xml_file_path)
+xml_file_path = replace_Parameter(xml_file_path, parameters)
+
+
 tree = ET.parse(xml_file_path)
 root = tree.getroot()
-weather = Weather()
-weather.fillWeather(root)
+weather = extract_weather_info(xml_file_path)
+print(weather.precipitation_type)
+print(weather.precipitation_intensity)
+
+fillWeatherInXML(weather)
+
+#weather.fillWeather(root)
+if weather.precipitation_type == "rain":
+    if float(weather.precipitation_intensity) <= 0.5:
+        weather_preset = "rainy"
+    else:
+        weather_preset = "heavy_rain"
+else:
+    weather_preset = "sunny"
+print(f"chose weather preset {weather_preset}")
 print(weather.time_of_day)
 for name, param in parameters.items():
     print(f"Parameter '{name}': Type = {param['type']}, Value = {param['value']}")
-endcondition = False
+endConditionFinished = False
 bng = BeamNGpy('localhost', 64256, home='C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0', user='C:\\Users\\stefan\\AppData\\Local\\BeamNG.drive')
 # Launch BeamNG.tech
 bng.open()
@@ -101,29 +138,35 @@ distance = math.sqrt((pos2[0] - pos1[0])**2 + (pos2[1] - pos1[1])**2 + (pos2[2] 
 print(distance)
 startReachCondition = False
 startTraveledDistanceCondition = False
+endTraveledDistanceCondition = False
+endReachCondition = False
+
 for condition in conditions:
     if condition.main_condition_type == 'EndCondition' and condition.condition_type == 'TraveledDistance':
+        endTraveledDistanceCondition = True
         print("here1")
-        tdcondition = condition
+        endCondition = condition
         for vehicle in vehicles:
             if condition.mainEntityRef == vehicle.vid:
                 print("here2")
                 tdstartpos = vehicle.state['pos']
     elif condition.main_condition_type == 'OverallStartCondition' and condition.condition_type == 'TraveledDistance':
         startTraveledDistanceCondition = True
-        oscondition = condition
+        startCondtion = condition
         for vehicle in vehicles:
             if condition.mainEntityRef == vehicle.vid:
                 print("here3")
                 oscondstartpos = vehicle.state['pos']
     elif condition.main_condition_type == 'OverallStartCondition' and condition.condition_type == 'ReachPosition':
         startReachCondition = True
-        reachscondition = condition
-        print("here4")
-if 'oscondstartpos' in locals() or 'oscondstartpos' in globals() or 'reachscondition' in locals():
-    startCondition = False
+        startCondtion = condition
+    elif condition.main_condition_type == 'EndCondition' and condition.condition_type == 'ReachPosition':
+        endReachCondition = True
+        endCondition = condition
+if 'startCondtion' in locals():
+    startConditionFinished = False
 else:
-    startCondition = True
+    startConditionFinished = True
 for event in events:
     if event.condition.condition_type == 'RelativeDistance' and event.condition.main_condition_type == 'OverallStartCondition':
         rdcondition = event.condition
@@ -147,41 +190,33 @@ for event in events:
 
 
 
-while startCondition == False:
+while startConditionFinished == False:
     if startTraveledDistanceCondition == True:
         for vehicle in vehicles:
             vehicle.sensors.poll()
             pos1 = vehicle.state['pos']
             #print(pos1)
             traveled_distance = np.linalg.norm(np.array(pos1) - oscondstartpos)
-            if oscondition.mainEntityRef == vehicle.vid and traveled_distance >= oscondition.value:
+            if startCondtion.mainEntityRef == vehicle.vid and traveled_distance >= startCondtion.value:
                 print("StartCondition TraveledDistance sucessfull")
                 print(traveled_distance)
-                startCondition = True
+                startConditionFinished = True
                 break
     elif startReachCondition == True:
         print('startReachCondition')
         for vehicle in vehicles:
             vehicle.sensors.poll()
             pos1 = vehicle.state['pos']
-
-            print(pos1)
-            print(pos1[0])
-            print(pos1[1])
-            print('x')
-            print(reachscondition.position)
-            print(reachscondition.position[0])
-            print(reachscondition.position[1])
-            if reachscondition.position[0]-reachscondition.tolerance <= pos1[0] <= reachscondition.position[0]+reachscondition.tolerance and reachscondition.position[1] - reachscondition.tolerance <= pos1[1] <= reachscondition.position[1] + reachscondition.tolerance and reachscondition.position[2] - reachscondition.tolerance <= pos1[2] <= reachscondition.position[2] + reachscondition.tolerance:
+            if startCondtion.position[0]-startCondtion.tolerance <= pos1[0] <= startCondtion.position[0]+startCondtion.tolerance and startCondtion.position[1] - startCondtion.tolerance <= pos1[1] <= startCondtion.position[1] + startCondtion.tolerance and startCondtion.position[2] - startCondtion.tolerance <= pos1[2] <= startCondtion.position[2] + startCondtion.tolerance:
                 print("StartCondition ReachCondition sucessfull")
                 print(pos1)
-                startCondition = True
+                startConditionFinished = True
                 break
 print("here")
 finishedCondition = None
 finishedEvents = []
 lastFinishedEvent = None
-while endcondition == False:
+while endConditionFinished == False:
     for vehicle in vehicles:
         vehicle.sensors.poll()
         for act in acts:
@@ -264,22 +299,34 @@ while endcondition == False:
                             lastFinishedEvent = event.name
 
 
-        if 'oscondstartpos' in locals() or 'oscondstartpos' in globals():
+        if 'endCondition' in locals():
             vehicle.sensors.poll()
             pos1 = vehicle.state['pos']
             print(pos1)
             traveled_distance = np.linalg.norm(np.array(pos1) - tdstartpos)
             print(traveled_distance)
             print('Test')
-            if tdcondition.main_condition_type == 'EndCondition':
-                if tdcondition.mainEntityRef == vehicle.vid and traveled_distance >= tdcondition.value:
+            if endCondition.main_condition_type == 'EndCondition' and endCondition.condition_type == 'TraveledDistance':
+                if endCondition.mainEntityRef == vehicle.vid and traveled_distance >= endCondition.value:
                     print('Test2')
                     vehicle.control(throttle=0, brake=1)
                     vehicle.ai.set_speed(0)
                     sleep(10)
-                    endcondition = True
+                    endConditionFinished = True
                     print("Endcondition TraveledDistance successfull")
                     break
+            if endCondition.main_condition_type == 'EndCondition' and endCondition.condition_type == 'ReachCondition':
+                if endCondition.mainEntityRef == vehicle.vid and traveled_distance >= endCondition.value:
+                    pos1 = vehicle.state['pos']
+                    if endCondition.position[0] - endCondition.tolerance <= pos1[0] <= endCondition.position[0] + endCondition.tolerance and endCondition.position[1] - endCondition.tolerance <= pos1[1] <= endCondition.position[1] + endCondition.tolerance and endCondition.position[2] - endCondition.tolerance <= pos1[2] <= endCondition.position[2] + endCondition.tolerance:
+                        print("EndCondition ReachCondition sucessfull")
+                        print(pos1)
+                        vehicle.control(throttle=0, brake=1)
+                        vehicle.ai.set_speed(0)
+                        sleep(10)
+                        endConditionFinished = True
+                        break
+
 for condition in conditions:
     if condition.main_condition_type == 'criteria_CollisionTest':
         state = State()
