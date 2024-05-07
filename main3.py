@@ -74,7 +74,7 @@ root = tree.getroot()
 weather = extract_weather_info(xml_file_path)
 print(weather.precipitation_type)
 print(weather.precipitation_intensity)
-
+print(weather.time_of_day)
 fillWeatherInXML(weather)
 
 #weather.fillWeather(root)
@@ -86,6 +86,7 @@ if weather.precipitation_type == "rain":
 else:
     weather_preset = "sunny"
 print(f"chose weather preset {weather_preset}")
+weather_preset = 'rainy'
 print(weather.time_of_day)
 for name, param in parameters.items():
     print(f"Parameter '{name}': Type = {param['type']}, Value = {param['value']}")
@@ -93,7 +94,8 @@ endConditionFinished = False
 bng = BeamNGpy('localhost', 64256, home='C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0', user='C:\\Users\\stefan\\AppData\\Local\\BeamNG.drive')
 # Launch BeamNG.tech
 bng.open()
-bng.set_tod(weather.time_of_day)
+#weather.time_of_day = "03:00:00"
+#bng.set_tod(weather.time_of_day)
 # Create a scenario in west_coast_usa called 'example'
 scenario = Scenario('west_coast_usa', 'example')
 state = State()
@@ -105,8 +107,7 @@ for vehicle in scenario_objects:
 
 scenario.make(bng)
 
-
-bng.set_tod(weather.time_of_day)
+bng.set_tod(str(weather.time_of_day))
 # Entfernung zwischen den Fahrzeugen berechnen
 rdconditionset = False
 pos1 = 0
@@ -114,7 +115,7 @@ pos2 = 0
 bng.scenario.load(scenario)
 bng.scenario.start()
 bng.set_tod(weather.time_of_day)
-bng.set_weather_preset('rainy')
+bng.set_weather_preset('xml_weather')
 bng.set_tod(weather.time_of_day)
 
 sleep(5)

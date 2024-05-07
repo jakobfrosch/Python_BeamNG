@@ -3,12 +3,18 @@ from datetime import datetime
 
 
 def time_to_decimal(time_str):
-    hours, minutes, seconds = map(int, time_str.split(':'))
-    total_seconds = hours * 3600 + minutes * 60 + seconds
-    seconds_since_midnight = total_seconds % (24 * 3600)
-    decimal_time = seconds_since_midnight / (24 * 3600)
-    decimal_time = 1 - (2 * abs(decimal_time - 0.5))
-    return decimal_time
+    hour, minute, second = map(int, time_str.split(':'))
+    if hour < 12:
+        hour = hour + 12
+    else:
+        hour = hour - 12
+    #print(hour)
+    decimal_value = hour + minute / 60 + second / 3600
+    decimal_value = decimal_value / 24
+    print(decimal_value)
+    #decimal_value = round(decimal_value, 2)
+    print(decimal_value)
+    return decimal_value
 class Weather:
     def __init__(self, cloud_state=None, sun_azimuth=None, sun_elevation=None, sun_intensity=None, time_of_day=None, precipitation_type=None, precipitation_intensity=None, fog_visualRange=None):
         self.fog_visualRange = fog_visualRange
@@ -44,13 +50,11 @@ class Weather:
                     # Datum in ein datetime-Objekt konvertieren
                     date_object = datetime.strptime(time_of_day_element.get("dateTime"), '%Y-%m-%dT%H:%M:%S')
                     date_object = date_object.strftime('%H:%M:%S')
-                    print("tod")
                     print(date_object)
                     #self.time_of_day = date_object.strftime('%H:%M:%S')
-                    date_object = time_to_decimal(date_object)
-                    print(date_object)
+                    self.time_of_day = time_to_decimal(date_object)
 
-                    # Nur die Uhrzeit extrahieren
+                    print(self.time_of_day)
 
 
 
