@@ -24,28 +24,28 @@ class TimeOfDayCondition(BaseCondition):
         return f"Time of Day Condition: Start Time = {self.start_time}, End Time = {self.end_time}"
 
 
-class SpeedCondition(BaseCondition):
-    def __init__(self, value, comparison_operator):
-        super().__init__("Speed")
-        self.value = value
-        self.comparison_operator = comparison_operator
+#class SpeedCondition(BaseCondition):
+#    def __init__(self, value, comparison_operator):
+#        super().__init__("Speed")
+#        self.value = value
+#        self.comparison_operator = comparison_operator
 
-    def check_condition(self, current_speed):
-        if self.comparison_operator == ">":
-            return current_speed > self.value
-        elif self.comparison_operator == "<":
-            return current_speed < self.value
-        elif self.comparison_operator == ">=":
-            return current_speed >= self.value
-        elif self.comparison_operator == "<=":
-            return current_speed <= self.value
-        elif self.comparison_operator == "==":
-            return current_speed == self.value
-        else:
-            raise ValueError("Invalid comparison operator")
+#    def check_condition(self, current_speed):
+#        if self.comparison_operator == ">":
+#            return current_speed > self.value
+#        elif self.comparison_operator == "<":
+#            return current_speed < self.value
+#        elif self.comparison_operator == ">=":
+#            return current_speed >= self.value
+#        elif self.comparison_operator == "<=":
+#            return current_speed <= self.value
+#        elif self.comparison_operator == "==":
+#            return current_speed == self.value
+#        else:
+#            raise ValueError("Invalid comparison operator")
 
-    def __str__(self):
-        return f"Speed Condition: Value = {self.value}, Comparison Operator = {self.comparison_operator}"
+#    def __str__(self):
+#        return f"Speed Condition: Value = {self.value}, Comparison Operator = {self.comparison_operator}"
 
 class ReachPositionCondition(BaseCondition):
     def __init__(self, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type, tolerance, position):
@@ -99,6 +99,16 @@ class TraveledDistanceCondition(BaseCondition):
 
     def __str__(self):
         return f"Traveled Distance Condition: (Main Condition Type: {self.main_condition_type} Condition Type Type: {self.condition_type_type} Main Entity Ref: {self.mainEntityRef} Triggering Entities: {self.triggeringEntities}) Value = {self.value}"
+
+class SpeedCondition(BaseCondition):
+    def __init__(self, value, rule, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
+        super().__init__("Speed", condition_type_type, mainEntityRef, triggeringEntities, main_condition_type)
+        self.value = value
+        self.rule = rule
+
+
+    def __str__(self):
+        return f"Speed Condition: (Main Condition Type: {self.main_condition_type} Condition Type Type: {self.condition_type_type} Main Entity Ref: {self.mainEntityRef} Triggering Entities: {self.triggeringEntities}) Value = {self.value}, rule= {self.rule}"
 
 
 class SimulationTimeCondition(BaseCondition):
@@ -197,10 +207,11 @@ def parse_conditions_from_xml(xml_path):
             start_time = float(condition_params.get('startTime'))
             end_time = float(condition_params.get('endTime'))
             condition = TimeOfDayCondition(start_time, end_time)
-        elif condition_type2 == 'SpeedCondition':
-            value = float(condition_params.get('value'))
-            comparison_operator = condition_params.get('rule')
-            condition = SpeedCondition(value, comparison_operator)
+        #elif condition_type2 == 'SpeedCondition':
+        #    print(condition_params)
+        #    value = int(condition_params.get('value'))
+        #    comparison_operator = condition_params.get('rule')
+        #    condition = SpeedCondition(value, comparison_operator)
         elif condition_type2 == 'RelativeDistanceCondition':
             entity_ref = condition_params2.get('entityRef')
             relative_distance_type = condition_params2.get('relativeDistanceType')
@@ -214,6 +225,11 @@ def parse_conditions_from_xml(xml_path):
         elif condition_type2 == 'TraveledDistanceCondition':
             value = float(condition_params2.get('value'))
             condition = TraveledDistanceCondition(value, condition_type_type, mainEntityRef, triggeringEntities,
+                                                  main_condition_type)
+        elif condition_type2 == 'SpeedCondition':
+            value = float(condition_params2.get('value'))
+            rule = str(condition_params2.get('rule'))
+            condition = SpeedCondition(value, rule, condition_type_type, mainEntityRef, triggeringEntities,
                                                   main_condition_type)
         elif condition_type2 == 'ReachPositionCondition':
             position_element = node2.find('.//Position/WorldPosition')
@@ -252,8 +268,10 @@ def parse_conditions_from_xml(xml_path):
 
 def main():
     xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"
+    xml_path4 = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle4.xosc"
+    xml_path5 = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle5.xosc"
     xml_path2 = "C:\\Users\\stefan\\Documents\\PedestrianCrossingFront.xosc"
-    conditions = parse_conditions_from_xml(xml_path)
+    conditions = parse_conditions_from_xml(xml_path5)
 
     # Drucke die extrahierten Conditions
     print("Extracted Conditions:")

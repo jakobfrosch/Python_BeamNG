@@ -40,16 +40,28 @@ class SpeedAction:
                f"SpeedActionTarget: AbsoluteTargetSpeed: Value = {self.target_speed_value}"
 
 
+class RoutingAction:
+    def __init__(self, route_name, waypoints):
+        self.route_name = route_name
+        self.waypoints = waypoints
+
+    def __str__(self):
+        return f"Route: {self.route_name}, Waypoints: {self.waypoints}"
+
+
 class Action:
-    def __init__(self, name, action_type, speed_action=None):
+    def __init__(self, name, action_type, speed_action=None, routing_action=None):
         self.name = name
         self.action_type = action_type
         self.speed_action = speed_action
+        self.routing_action = routing_action
 
     def __str__(self):
-        action_str = f"Action: Name = {self.name}\n"
+        action_str = f"Action: Name = {self.name}\n, Action Type: {self.action_type}, "
         if self.speed_action:
             action_str += str(self.speed_action) + "\n"
+        if self.routing_action:
+            action_str += str(self.routing_action) + "\n"
         return action_str
 
 
@@ -112,9 +124,13 @@ def parse_conditions_from_xml(xml_path):
 
 def parse_actions(element):
     speed_action = None
+    routing_action = None
+    action_type = None
     action_name = element.attrib.get('name')
     for action_elem in element.iter():
+
         if action_elem.tag == "SpeedAction":
+            action_type = action_elem.tag
             try:
                 dynamics_shape = action_elem.find("./SpeedActionDynamics").attrib.get("dynamicsShape")
             except AttributeError:
@@ -129,8 +145,25 @@ def parse_actions(element):
                 dynamics_dimension = None
             target_speed_value = action_elem.find("./SpeedActionTarget/AbsoluteTargetSpeed").attrib.get("value")
             speed_action = SpeedAction(dynamics_shape, value, dynamics_dimension, target_speed_value)
-            break
-    return Action(action_name, "Private", speed_action)
+        elif action_elem.tag == "RoutingAction":
+            action_type = action_elem.tag
+            route_name = action_elem.find("./AssignRouteAction/Route").attrib.get("name")
+            route_type = action_elem.tag
+            print(route_type)
+            waypoints = []
+            for waypoint_elem in action_elem.findall("./AssignRouteAction/Route/Waypoint"):
+                position_elem = waypoint_elem.find("./Position/WorldPosition")
+                waypoint = {
+                    "routeStrategy": waypoint_elem.attrib.get("routeStrategy"),
+                    "x": position_elem.attrib.get("x"),
+                    "y": position_elem.attrib.get("y"),
+                    "z": position_elem.attrib.get("z"),
+                    "h": position_elem.attrib.get("h")
+                }
+                waypoints.append(waypoint)
+            routing_action = RoutingAction(route_name, waypoints)
+
+    return Action(action_name, action_type, speed_action, routing_action)
 
 
 def parse_events_from_xml(xml_path):
@@ -145,39 +178,35 @@ def parse_events_from_xml(xml_path):
 
         action_elem = event_elem.find("./Action")
         action = parse_actions(action_elem)
-
         conditions = Condition.parse_conditions_from_xml(xml_path)
         condition_elem = event_elem.find(".//Condition")
         condition_name = None
+        c1 = None
         if condition_elem is not None:
             condition_name = condition_elem.attrib.get('name')
-        #print (condition_name)
         for condition in conditions:
             if condition.main_condition_type == condition_name:
                 c1 = condition
         event = Event(event_name, priority, action, c1)
-        c1 = None
+
         events.append(event)
 
     return events
 
+
 def main():
     xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"
+    xml_path4 = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle4.xosc"
+    xml_path5 = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle5.xosc"
     xml_path2 = "C:\\Users\\stefan\\Documents\\PedestrianCrossingFront.xosc"
-    events = parse_events_from_xml(xml_path)
-    conditions = Condition.parse_conditions_from_xml(xml_path)
-    #conditions = parse_conditions_from_xml(xml_path)
+    events = parse_events_from_xml(xml_path4)
+    conditions = Condition.parse_conditions_from_xml(xml_path5)
 
-
-    events = parse_events_from_xml(xml_path)
     print("\nExtracted Events:")
     for event in events:
-        #if
         print(event)
         print()
-    #print("Extracted Conditions:")
-    #for condition in conditions:
-        #print(condition)
+
 
 if __name__ == "__main__":
     main()

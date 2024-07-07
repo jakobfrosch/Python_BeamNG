@@ -7,7 +7,7 @@ def remove_last_character(filepath):
         file.seek(0, os.SEEK_END)
         file.seek(file.tell() - 1, os.SEEK_SET)
         file.truncate()
-def replace_file_in_zip(zipname, filename, new_content):
+def replace_weatherfile_in_zip(zipname, filename, new_content):
     # Temporären Ordner erstellen
     temp_dir = 'temp_unzip_folder'
     os.makedirs(temp_dir, exist_ok=True)
@@ -30,7 +30,7 @@ def replace_file_in_zip(zipname, filename, new_content):
 
     # Temporären Ordner löschen
     shutil.rmtree(temp_dir)
-def extend_file_in_zip(zipname, filename, additional_data):
+def extend_file_in_zip(zipname, filename, additional_data, removeLastChar):
     # Temporären Ordner erstellen
     temp_dir = 'temp_unzip_folder'
     os.makedirs(temp_dir, exist_ok=True)
@@ -41,8 +41,8 @@ def extend_file_in_zip(zipname, filename, additional_data):
 
     # Datei im temporären Ordner öffnen und letztes Zeichen entfernen
     filepath = os.path.join(temp_dir, filename)
-    remove_last_character(filepath)
-
+    if removeLastChar:
+        remove_last_character(filepath)
     # Datei im temporären Ordner erweitern
     with open(filepath, 'a') as file:
         file.write(additional_data)
@@ -51,8 +51,9 @@ def extend_file_in_zip(zipname, filename, additional_data):
     with zipfile.ZipFile(zipname, 'w') as zip_ref:
         # Dateien aus dem temporären Ordner zum neuen Archiv hinzufügen
         for root, dirs, files in os.walk(temp_dir):
-            for file in files:
-                zip_ref.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), temp_dir))
+            for file_name in files:
+                file_path = os.path.join(root, file_name)
+                zip_ref.write(file_path, os.path.relpath(file_path, temp_dir))
 
     # Temporären Ordner löschen
     shutil.rmtree(temp_dir)
@@ -124,8 +125,48 @@ def fillWeatherInXML(weather):
             }}
         }}
     }}'''
-    #extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
-    #                   'art\\weather\\defaults.json', additional_data)
-    replace_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
+    #extend_weatherfile_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
+                              #                   'art\\weather\\defaults.json', additional_data)
+    replace_weatherfile_in_zip('C:\\Users\\stefan\\Documents\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
                        'art\\weather\\defaults.json', new_content)
 
+def remove_line_from_file_in_zip(zipname, filename, line_to_remove):
+    # Temporären Ordner erstellen
+    temp_dir = 'temp_unzip_folder'
+    os.makedirs(temp_dir, exist_ok=True)
+
+    # Archiv entpacken
+    with zipfile.ZipFile(zipname, 'r') as zip_ref:
+        zip_ref.extractall(temp_dir)
+
+    # Datei im temporären Ordner öffnen und Zeile entfernen
+    filepath = os.path.join(temp_dir, filename)
+    with open(filepath, 'r') as file:
+        lines = file.readlines()
+    with open(filepath, 'w') as file:
+        for line in lines:
+            if line.strip() != line_to_remove.strip():
+                file.write(line)
+
+    # Neues Zip-Archiv erstellen
+    with zipfile.ZipFile(zipname, 'w') as zip_ref:
+        # Dateien aus dem temporären Ordner zum neuen Archiv hinzufügen
+        for root, dirs, files in os.walk(temp_dir):
+            for file in files:
+                zip_ref.write(os.path.join(root, file), os.path.relpath(os.path.join(root, file), temp_dir))
+
+    # Temporären Ordner löschen
+    shutil.rmtree(temp_dir)
+
+
+def removeWaypointInXML(line_to_remove):
+    remove_line_from_file_in_zip('C:\\Users\\stefan\\Documents\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip', 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json', line_to_remove)
+    print(line_to_remove + "removed")
+def fillWaypointInXML(name, pos):
+    content = f'''\n{{"name":"{name}","class":"BeamNGWaypoint","persistentId":"ffbf30ea-c0a9-4904-a91c-86d5be267d99","__parent":"AIWaypointsGroup","position":{pos},"scale":[3.62683105,3.62683105,3.62683105]}}'''
+    #extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip','\\levels\\west_coast_usa\\main\\MissionGroup\\AIWaypointsGroup\\items.level.json', content, False)
+    extend_file_in_zip('C:\\Users\\stefan\\Documents\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip', 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json', content, False)
+    #'C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip', 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json'
+    #C:\Users\stefan\Downloads\BeamNG.tech.v0.31.3.0\BeamNG.tech.v0.31.3.0\content\levels\west_coast_usa.zip\levels\west_coast_usa\main\MissionGroup\AIWaypointsGroup
+    #extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip', 'art\\weather\\defaults.json', content, False)
+    return content

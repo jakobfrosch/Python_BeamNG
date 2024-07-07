@@ -13,7 +13,7 @@ def remove_last_character(filepath):
         print(f"Fehler beim Entfernen des letzten Zeichens in der Datei: {e}")
 
 
-def extend_file_in_zip(zipname, filename, additional_data):
+def extend_weather_file_in_zip(zipname, filename, additional_data):
     temp_dir = 'temp_unzip_folder'
     try:
         # Temporäres Verzeichnis erstellen
@@ -76,5 +76,5 @@ additional_data = f'''
 }}
 '''
 
-extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine_test.zip',
+extend_weather_file_in_zip('C:\\Users\\stefan\\Documents\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine_test.zip',
                    'art\\weather\\defaults.json', additional_data)
