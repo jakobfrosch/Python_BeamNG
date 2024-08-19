@@ -48,7 +48,13 @@ class RoutingAction:
     def __str__(self):
         return f"Route: {self.route_name}, Waypoints: {self.waypoints}"
 
+class LongitudinalDistanceAction:
+    def __init__(self, route_name, waypoints):
+        self.route_name = route_name
+        self.waypoints = waypoints
 
+    def __str__(self):
+        return f"Route: {self.route_name}, Waypoints: {self.waypoints}"
 class Action:
     def __init__(self, name, action_type, speed_action=None, routing_action=None):
         self.name = name

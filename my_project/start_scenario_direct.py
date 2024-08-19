@@ -128,7 +128,7 @@ print(weather.time_of_day)
 for name, param in parameters.items():
     print(f"Parameter '{name}': Type = {param['type']}, Value = {param['value']}")
 endConditionFinished = False
-bng = BeamNGpy('localhost', 64256, home='C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0', user='C:\\Users\\stefan\\AppData\\Local\\BeamNG.drive')
+bng = BeamNGpy('localhost', 64256, home='C:\\Users\\stefan\\Pictures\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0', user='C:\\Users\\stefan\\AppData\\Local\\BeamNG.drive')
 # Launch BeamNG.tech
 bng.open()
 #weather.time_of_day = "03:00:00"

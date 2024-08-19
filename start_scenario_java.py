@@ -360,7 +360,7 @@ for parameter in parameters:
                         finishedEvents.append(event.name)
 
 
-
+            bng.get_road_edges
             if 'endCondition' in locals():
                 vehicle.sensors.poll()
                 pos1 = vehicle.state['pos']
