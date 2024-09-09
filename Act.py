@@ -51,6 +51,7 @@ class Act:
 def parse_actions(element):
     speed_action = None
     action_name = element.attrib.get('name')
+    action_type = None
     for action_elem in element.iter():
         if action_elem.tag == "SpeedAction":
             try:
@@ -67,8 +68,26 @@ def parse_actions(element):
                 dynamics_dimension = None
             target_speed_value = action_elem.find("./SpeedActionTarget/AbsoluteTargetSpeed").attrib.get("value")
             speed_action = SpeedAction(dynamics_shape, value, dynamics_dimension, target_speed_value)
+            action_type = action_elem.tag
             break
-    return Action(action_name, "Private", speed_action)
+        elif action_elem.tag == "RoutingAction":
+            action_type = action_elem.tag
+            route_name = action_elem.find("./AssignRouteAction/Route").attrib.get("name")
+            route_type = action_elem.tag
+            print(route_type)
+            waypoints = []
+            for waypoint_elem in action_elem.findall("./AssignRouteAction/Route/Waypoint"):
+                position_elem = waypoint_elem.find("./Position/WorldPosition")
+                waypoint = {
+                    "routeStrategy": waypoint_elem.attrib.get("routeStrategy"),
+                    "x": position_elem.attrib.get("x"),
+                    "y": position_elem.attrib.get("y"),
+                    "z": position_elem.attrib.get("z"),
+                    "h": position_elem.attrib.get("h")
+                }
+                waypoints.append(waypoint)
+            #routing_action = RoutingAction(route_name, waypoints)
+    return Action(action_name, action_type, speed_action)
 
 
 def parse_acts_from_xml(xml_path):
@@ -82,7 +101,7 @@ def parse_acts_from_xml(xml_path):
 
 
 if __name__ == "__main__":
-    xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"
+    xml_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle4.xosc"
     xml_path2 = "C:\\Users\\stefan\\Documents\\PedestrianCrossingFront.xosc"
     acts = parse_acts_from_xml(xml_path)
     for act in acts:

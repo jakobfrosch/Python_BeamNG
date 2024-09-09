@@ -23,10 +23,136 @@ from Weather import Weather, extract_weather_info
 from updateZIP import extend_file_in_zip, fillWeatherInXML, fillWaypointInXML, remove_line_from_file_in_zip, \
     removeWaypointInXML
 
+import math
+import time
+import pickle
+import os
+from shapely.geometry import Polygon, Point
+from beamngpy import BeamNGpy, Scenario, Vehicle
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon as MplPolygon
+from beamngpy.sensors import State
 
+POLYGON_SAVE_PATH = "road_polygons.pkl"  # Dateipfad zum Speichern der Polygone
 xml_file_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle4.xosc"
+VEHICLE_LENGTH = 4.62  # in Meter
+VEHICLE_WIDTH = 1.82  # in Meter
+off_the_road_vehicles = []
 vehicles = []
 startPositions = []
+
+
+# Funktion zum Erstellen eines Straßenpolygons aus den Straßenkanten
+def create_road_polygon(road_edges):
+    left_points = [edge['left'][:2] for edge in road_edges]
+    right_points = [edge['right'][:2] for edge in reversed(road_edges)]
+    road_polygon = Polygon(left_points + right_points)
+
+    if not road_polygon.is_valid:
+        print("Warning: Das Straßenpolygon ist ungültig.")
+
+    return road_polygon
+
+
+# Funktion zur Überprüfung, ob das Fahrzeug auf einer der Straßen ist
+def is_vehicle_on_any_road(vehicle_position, road_polygons):
+    vehicle_point = Point(vehicle_position)
+    for road_polygon in road_polygons:
+        if road_polygon.contains(vehicle_point):
+            return True
+    return False
+
+def create_vehicle_box(vehicle_position, vehicle_direction):
+    x, y = vehicle_position
+    direction = math.radians(vehicle_direction)
+
+    # Berechnung der Fahrzeug-Eckpunkte basierend auf Position und Ausrichtung
+    dx = math.cos(direction) * VEHICLE_LENGTH / 2
+    dy = math.sin(direction) * VEHICLE_LENGTH / 2
+
+    corners = [
+        (x - dx - dy, y - dy + dx),  # Ecke 1
+        (x + dx - dy, y + dy + dx),  # Ecke 2
+        (x + dx + dy, y + dy - dx),  # Ecke 3
+        (x - dx + dy, y - dy - dx)  # Ecke 4
+    ]
+
+    return Polygon(corners)
+def is_vehicle_on_road(vehicle_box, combined_polygon):
+    return combined_polygon.contains(vehicle_box)
+# Funktion zur Überwachung der Fahrzeugposition
+def monitor_vehicle_position(vehicle, combined_polygon):
+    vehicle.sensors.poll()
+    curr_position = vehicle.state['pos'][:2]  # Fahrzeugposition abrufen (x, y)
+    vehicle_direction = vehicle.state['dir'][1]  # Fahrzeugausrichtung in Grad
+
+    # Erstelle das Fahrzeugrechteck
+    vehicle_box = create_vehicle_box(curr_position, vehicle_direction)
+
+    if not is_vehicle_on_road(vehicle_box, combined_polygon):
+        log_off_road(curr_position)
+    else:
+        print("Vehicle is on the road.")
+        print(vehicle.state['pos'])
+
+
+# Funktion zum Loggen, wenn das Fahrzeug die Straße verlässt
+def log_off_road(position):
+    print(f"Vehicle went off-road at position: {position}")
+
+
+# Funktion zum Speichern der Polygone
+def save_polygons(road_polygons):
+    with open(POLYGON_SAVE_PATH, 'wb') as f:
+        pickle.dump(road_polygons, f)
+    print(f"Road polygons saved to {POLYGON_SAVE_PATH}")
+
+
+# Funktion zum Laden der Polygone
+def load_polygons():
+    if os.path.exists(POLYGON_SAVE_PATH):
+        with open(POLYGON_SAVE_PATH, 'rb') as f:
+            road_polygons = pickle.load(f)
+        print(f"Road polygons loaded from {POLYGON_SAVE_PATH}")
+        return road_polygons
+    return None
+
+
+# Funktion zur Initialisierung der Visualisierung
+def init_visualization(road_polygons):
+    fig, ax = plt.subplots()
+
+    # Zeichne jedes Straßenpolygon
+    for polygon in road_polygons:
+        if not polygon.is_empty and polygon.is_valid:  # Überprüfe, ob das Polygon gültig und nicht leer ist
+            try:
+                mpl_poly = MplPolygon(list(polygon.exterior.coords), closed=True, edgecolor='blue', facecolor='none')
+                ax.add_patch(mpl_poly)
+            except Exception as e:
+                print(f"Error plotting polygon: {e}")
+
+    ax.set_aspect('equal', 'box')
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Live Vehicle Position on Road Polygons')
+    plt.grid(True)
+
+    # Initialisiere den Fahrzeugmarker als roten Punkt
+    vehicle_marker, = ax.plot([], [], 'ro', markersize=10, label='Vehicle')
+
+    plt.legend()
+    plt.ion()  # Interaktive Mode für Live-Updates aktivieren
+    plt.show()
+
+    return fig, ax, vehicle_marker
+
+
+# Funktion zur Aktualisierung der Fahrzeugposition in der Visualisierung
+def update_vehicle_position(vehicle_marker, vehicle_position):
+    vehicle_marker.set_data(vehicle_position[0], vehicle_position[1])
+    plt.draw()
+    plt.pause(0.001)  # Eine kleine Pause für das Rendering
+
 def extract_Parameter(file_path):
     tree = ET.parse(file_path)
     root = tree.getroot()
@@ -128,7 +254,7 @@ print(weather.time_of_day)
 for name, param in parameters.items():
     print(f"Parameter '{name}': Type = {param['type']}, Value = {param['value']}")
 endConditionFinished = False
-bng = BeamNGpy('localhost', 64256, home='C:\\Users\\stefan\\Pictures\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0', user='C:\\Users\\stefan\\AppData\\Local\\BeamNG.drive')
+bng = BeamNGpy('localhost', 64256, home='C:\\Users\\stefan\\Music\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0', user='C:\\Users\\stefan\\AppData\\Local\\BeamNG.drive')
 # Launch BeamNG.tech
 bng.open()
 #weather.time_of_day = "03:00:00"
@@ -140,7 +266,6 @@ for vehicle in xmlVehicles:
     v = Vehicle(vehicle.get('name'), model=vehicle.get('vehicle').get('name'), license=vehicle.get('name'))
     vehicles.append(v)
     scenario.add_vehicle(v, pos=(vehicle.get('vehicle').get('X'), vehicle.get('vehicle').get('Y'), vehicle.get('vehicle').get('Z')), cling=True, rot_quat=(0, 0, 0.3826834, 0.9238795))
-
 
 
 scenario.make(bng)
@@ -173,6 +298,27 @@ for vehicle in xmlVehicles:
             vehicle2.attach_sensor('damage', damage_sensor)
             #vehicle2.ai.set_waypoint("tunnel_city_D_26")
             print(vehicle2.vid)
+# Versuche, die Straßenpolygone aus der Datei zu laden
+bng.pause()
+road_polygons = load_polygons()
+
+# Wenn keine gespeicherten Polygone vorhanden sind, erstelle sie neu
+if road_polygons is None:
+    roads = bng.get_roads()
+    road_polygons = []
+    for road in roads:
+        try:
+            road_edges = bng.get_road_edges(road)
+            road_polygon = create_road_polygon(road_edges)
+            road_polygons.append(road_polygon)
+        except Exception as e:
+            print(f"Error processing road {road}: {e}")
+
+    # Speichere die erstellten Polygone für den nächsten Start
+    save_polygons(road_polygons)
+
+# Initialisiere die Visualisierung
+#fig, ax, vehicle_marker = init_visualization(road_polygons)
 
 #distance = math.sqrt((pos2[0] - pos1[0])**2 + (pos2[1] - pos1[1])**2 + (pos2[2] - pos1[2])**2)
 #print(distance)
@@ -186,7 +332,8 @@ endReachCondition = False
 #vehicles[1].ai_set_aggression(1.0)
 #vehicles[0].ai_set_aggression(0.1)
 
-
+bng.resume()
+bng.step(3)
 for condition in conditions:
     if condition.main_condition_type == 'EndCondition' and condition.condition_type == 'TraveledDistance':
         endTraveledDistanceCondition = True
@@ -241,6 +388,10 @@ while startConditionFinished == False:
             vehicle.sensors.poll()
             pos1 = vehicle.state['pos']
             #print(pos1)
+            vehicle_position = vehicle.state['pos'][:2]
+            #update_vehicle_position(vehicle_marker, vehicle_position)
+            monitor_vehicle_position(vehicle, road_polygons)
+            bng.step(3)  # Simulation fortsetzen
             traveled_distance = np.linalg.norm(np.array(pos1) - oscondstartpos)
             if startCondtion.mainEntityRef == vehicle.vid and traveled_distance >= startCondtion.value:
                 print("StartCondition TraveledDistance sucessfull")
@@ -252,6 +403,10 @@ while startConditionFinished == False:
         for vehicle in vehicles:
             vehicle.sensors.poll()
             pos1 = vehicle.state['pos']
+            vehicle_position = vehicle.state['pos'][:2]
+            #update_vehicle_position(vehicle_marker, vehicle_position)
+            monitor_vehicle_position(vehicle, road_polygons)
+            bng.step(3)  # Simulation fortsetzen
             if startCondtion.position[0]-startCondtion.tolerance <= pos1[0] <= startCondtion.position[0]+startCondtion.tolerance and startCondtion.position[1] - startCondtion.tolerance <= pos1[1] <= startCondtion.position[1] + startCondtion.tolerance and startCondtion.position[2] - startCondtion.tolerance <= pos1[2] <= startCondtion.position[2] + startCondtion.tolerance:
                 print("StartCondition ReachCondition sucessfull")
                 print(pos1)
@@ -265,6 +420,10 @@ lastFinishedEvent = None
 while endConditionFinished == False:
     for vehicle in vehicles:
         vehicle.sensors.poll()
+        vehicle_position = vehicle.state['pos'][:2]
+        #update_vehicle_position(vehicle_marker, vehicle_position)
+        monitor_vehicle_position(vehicle, road_polygons)
+        bng.step(3)  # Simulation fortsetzen
         vehicles[1].sensors.poll()
         print(vehicles[1].vid)
         print(vehicles[1].state['pos'])
@@ -399,21 +558,13 @@ for condition in conditions:
                 print(vehicle.sensors['damage'].data['damage'])
             else:
                 print("Fahrzeug hat keinen Schaden")
+    if not off_the_road_vehicles:
+        print("Keine Fahrzeuge haben die Straße verlassen")
+    else:
+        print("Folgende Fahrzeuge haben die Straße verlassen:")
+        for vehicle in off_the_road_vehicles:
+            print(vehicle.vid)
 for waypointLine in waypointLines:
     removeWaypointInXML(waypointLine)
-
-while 1 == 1:
-    vehicles[1].sensors.poll()
-    #print(vehicles[1].state['pos'])
-    #print(vehicles[1].vid)
-
-    #print(bng.get_roads())
-    road_edges = bng.get_road_edges('west_coast_usa')
-    car_position = vehicles[1].state['pos']
-
-    if is_car_on_road(car_position, road_edges):
-        print("Das Auto ist über die Straße gefahren.")
-    else:
-        print("Das Auto ist nicht über die Straße gefahren.")
 bng.close()
 

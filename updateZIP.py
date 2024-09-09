@@ -57,7 +57,8 @@ def extend_file_in_zip(zipname, filename, additional_data, removeLastChar):
 
     # Temporären Ordner löschen
     shutil.rmtree(temp_dir)
-def fillWeatherInXML(weather):
+def fillWeatherInXML(weather, BEAMNG_HOME):
+    zipname = BEAMNG_HOME + '\\gameengine.zip'
     cloudy = ["cloudy", "overcast", "rainy"]
     time_value=weather.time_of_day
     name = "xml_weather"
@@ -127,8 +128,7 @@ def fillWeatherInXML(weather):
     }}'''
     #extend_weatherfile_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
                               #                   'art\\weather\\defaults.json', additional_data)
-    replace_weatherfile_in_zip('C:\\Users\\stefan\\Documents\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
-                       'art\\weather\\defaults.json', new_content)
+    replace_weatherfile_in_zip(zipname,'art\\weather\\defaults.json', new_content)
 
 def remove_line_from_file_in_zip(zipname, filename, line_to_remove):
     # Temporären Ordner erstellen
@@ -159,13 +159,15 @@ def remove_line_from_file_in_zip(zipname, filename, line_to_remove):
     shutil.rmtree(temp_dir)
 
 
-def removeWaypointInXML(line_to_remove):
-    remove_line_from_file_in_zip('C:\\Users\\stefan\\Documents\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip', 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json', line_to_remove)
+def removeWaypointInXML(line_to_remove,BEAMNG_HOME):
+    zipname=BEAMNG_HOME+'\\content\\levels\\west_coast_usa.zip'
+    remove_line_from_file_in_zip(zipname, 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json', line_to_remove)
     print(line_to_remove + "removed")
-def fillWaypointInXML(name, pos):
+def fillWaypointInXML(name, pos,BEAMNG_HOME):
     content = f'''\n{{"name":"{name}","class":"BeamNGWaypoint","persistentId":"ffbf30ea-c0a9-4904-a91c-86d5be267d99","__parent":"AIWaypointsGroup","position":{pos},"scale":[3.62683105,3.62683105,3.62683105]}}'''
     #extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip','\\levels\\west_coast_usa\\main\\MissionGroup\\AIWaypointsGroup\\items.level.json', content, False)
-    extend_file_in_zip('C:\\Users\\stefan\\Documents\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip', 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json', content, False)
+    zipname=BEAMNG_HOME+'\\content\\levels\\west_coast_usa.zip'
+    extend_file_in_zip(zipname, 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json', content, False)
     #'C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\content\\levels\\west_coast_usa.zip', 'levels/west_coast_usa/main/MissionGroup/AIWaypointsGroup/items.level.json'
     #C:\Users\stefan\Downloads\BeamNG.tech.v0.31.3.0\BeamNG.tech.v0.31.3.0\content\levels\west_coast_usa.zip\levels\west_coast_usa\main\MissionGroup\AIWaypointsGroup
     #extend_file_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip', 'art\\weather\\defaults.json', content, False)

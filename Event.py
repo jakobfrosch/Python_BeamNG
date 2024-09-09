@@ -206,7 +206,7 @@ def main():
     xml_path5 = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle5.xosc"
     xml_path2 = "C:\\Users\\stefan\\Documents\\PedestrianCrossingFront.xosc"
     events = parse_events_from_xml(xml_path4)
-    conditions = Condition.parse_conditions_from_xml(xml_path5)
+    conditions = Condition.parse_conditions_from_xml(xml_path4)
 
     print("\nExtracted Events:")
     for event in events:
