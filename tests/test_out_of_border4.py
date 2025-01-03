@@ -8,12 +8,12 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 from beamngpy.sensors import State
 
-POLYGON_SAVE_PATH = "road_polygons.pkl"
+POLYGON_SAVE_PATH = "../road_polygons_old.pkl"
 
 # Fahrzeugabmessungen (zum Beispiel)
-VEHICLE_LENGTH = 4.62  # in Meter
-VEHICLE_WIDTH = 1.82  # in Meter
-
+VEHICLE_LENGTH = 4.69  # in Meter
+VEHICLE_WIDTH = 1.84  # in Meter
+counter = 0
 
 # Funktion zum Erstellen eines Straßenpolygons aus den Straßenkanten
 def create_road_polygon(road_edges):
@@ -23,6 +23,8 @@ def create_road_polygon(road_edges):
 
     if not road_polygon.is_valid:
         print("Warning: Das Straßenpolygon ist ungültig.")
+    else:
+        print(f"Straßenpolygon ist gültig.")
     return road_polygon
 
 
@@ -30,7 +32,8 @@ def create_road_polygon(road_edges):
 def create_vehicle_box(vehicle_position, vehicle_direction):
     x, y = vehicle_position
     direction = math.radians(vehicle_direction)
-
+    #print(f"Direction: {direction}")
+    #print(f"vehicle_direction: {vehicle_direction}")
     # Berechnung der Fahrzeug-Eckpunkte basierend auf Position und Ausrichtung
     dx = math.cos(direction) * VEHICLE_LENGTH / 2
     dy = math.sin(direction) * VEHICLE_LENGTH / 2
@@ -139,7 +142,7 @@ def visualize_polygons(road_polygons, vehicle_position=None):
                 ax.add_patch(mpl_poly)
             except Exception as e:
                 print(f"Error plotting polygon: {e}")
-
+        #break
     # Optional: Fahrzeugposition zeichnen
     if vehicle_position:
         ax.plot(vehicle_position[0], vehicle_position[1], 'ro', markersize=10, label='Vehicle')
@@ -159,8 +162,8 @@ def main():
     scenario = Scenario('west_coast_usa', 'example')
     state = State()
     vehicle = Vehicle('ego_vehicle', model='etk800', licence='PYTHON')
-    scenario.add_vehicle(vehicle, pos=(-606.5587361711077, -758.9599711584742, 134.69950140020228),
-                         rot_quat=(0, 0, 0.9238795, -0.3826834))
+    scenario.add_vehicle(vehicle, pos=(-462.3130026726867, -748.9811885876843, 141.67463761260296),
+                         rot_quat=(0, 0, -0.5, 0.8660254))
 
     scenario.make(bng)
     bng.scenario.load(scenario)

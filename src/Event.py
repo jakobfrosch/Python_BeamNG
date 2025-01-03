@@ -1,5 +1,7 @@
 import xml.etree.ElementTree as ET
-import Condition
+
+from src import Condition
+
 
 class BaseCondition:
     def __init__(self, condition_type, condition_type_type, mainEntityRef, triggeringEntities, main_condition_type):
@@ -132,42 +134,48 @@ def parse_actions(element):
     speed_action = None
     routing_action = None
     action_type = None
-    action_name = element.attrib.get('name')
-    for action_elem in element.iter():
-
-        if action_elem.tag == "SpeedAction":
-            action_type = action_elem.tag
-            try:
-                dynamics_shape = action_elem.find("./SpeedActionDynamics").attrib.get("dynamicsShape")
-            except AttributeError:
-                dynamics_shape = None
-            try:
-                value = action_elem.find("./SpeedActionDynamics").attrib.get("value")
-            except AttributeError:
-                value = None
-            try:
-                dynamics_dimension = action_elem.find("./SpeedActionDynamics").attrib.get("dynamicsDimension")
-            except AttributeError:
-                dynamics_dimension = None
-            target_speed_value = action_elem.find("./SpeedActionTarget/AbsoluteTargetSpeed").attrib.get("value")
-            speed_action = SpeedAction(dynamics_shape, value, dynamics_dimension, target_speed_value)
-        elif action_elem.tag == "RoutingAction":
-            action_type = action_elem.tag
-            route_name = action_elem.find("./AssignRouteAction/Route").attrib.get("name")
-            route_type = action_elem.tag
-            print(route_type)
-            waypoints = []
-            for waypoint_elem in action_elem.findall("./AssignRouteAction/Route/Waypoint"):
-                position_elem = waypoint_elem.find("./Position/WorldPosition")
-                waypoint = {
-                    "routeStrategy": waypoint_elem.attrib.get("routeStrategy"),
-                    "x": position_elem.attrib.get("x"),
-                    "y": position_elem.attrib.get("y"),
-                    "z": position_elem.attrib.get("z"),
-                    "h": position_elem.attrib.get("h")
-                }
-                waypoints.append(waypoint)
-            routing_action = RoutingAction(route_name, waypoints)
+    action_name = None
+    if element is not None:
+        action_name = element.attrib.get('name', None)
+        for action_elem in element.iter():
+            if action_elem.tag == "SpeedAction":
+                action_type = action_elem.tag
+                try:
+                    dynamics_shape = action_elem.find("./SpeedActionDynamics").attrib.get("dynamicsShape")
+                except AttributeError:
+                    dynamics_shape = None
+                try:
+                    value = action_elem.find("./SpeedActionDynamics").attrib.get("value")
+                except AttributeError:
+                    value = None
+                try:
+                    dynamics_dimension = action_elem.find("./SpeedActionDynamics").attrib.get("dynamicsDimension")
+                except AttributeError:
+                    dynamics_dimension = None
+                target_speed_value = None
+                if action_elem is not None:
+                    absolute_target_speed_elem = action_elem.find("./SpeedActionTarget/AbsoluteTargetSpeed")
+                    if absolute_target_speed_elem is not None:
+                        target_speed_value = absolute_target_speed_elem.attrib.get("value", None)
+                speed_action = SpeedAction(dynamics_shape, value, dynamics_dimension, target_speed_value)
+            elif action_elem.tag == "RoutingAction":
+                action_type = action_elem.tag
+                route_name = action_elem.find("./AssignRouteAction/Route").attrib.get("name")
+                route_type = action_elem.tag
+                #print(route_type)
+                waypoints = []
+                for waypoint_elem in action_elem.findall("./AssignRouteAction/Route/Waypoint"):
+                    position_elem = waypoint_elem.find("./Position/WorldPosition")
+                    waypoint = {
+                        "routeStrategy": waypoint_elem.attrib.get(
+                            "routeStrategy") if waypoint_elem is not None else None,
+                        "x": position_elem.attrib.get("x") if position_elem is not None else None,
+                        "y": position_elem.attrib.get("y") if position_elem is not None else None,
+                        "z": position_elem.attrib.get("z") if position_elem is not None else None,
+                        "h": position_elem.attrib.get("h") if position_elem is not None else None
+                    }
+                    waypoints.append(waypoint)
+                routing_action = RoutingAction(route_name, waypoints)
 
     return Action(action_name, action_type, speed_action, routing_action)
 
@@ -181,9 +189,10 @@ def parse_events_from_xml(xml_path):
     for event_elem in root.findall(".//Event"):
         event_name = event_elem.attrib.get('name')
         priority = event_elem.attrib.get('priority')
-
         action_elem = event_elem.find("./Action")
-        action = parse_actions(action_elem)
+        action = None
+        if action_elem is not None:
+            action = parse_actions(action_elem)
         conditions = Condition.parse_conditions_from_xml(xml_path)
         condition_elem = event_elem.find(".//Condition")
         condition_name = None

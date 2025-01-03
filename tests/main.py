@@ -1,19 +1,17 @@
-import random
 from time import sleep
-from beamngpy import BeamNGpy, Scenario, Vehicle, Road
+from beamngpy import BeamNGpy, Scenario
 from beamngpy.sensors import Lidar
 from beamngpy.sensors import Radar
 from beamngpy.sensors import State
 from beamngpy.vehicle import Vehicle
 import numpy as np
-from beamngpy.sensors import Damage, Camera
+from beamngpy.sensors import Damage
 import sys
-from beamngpy.sensors import RoadsSensor
 
 import xml.etree.ElementTree as ET
 
-import Weather
-from Condition import parse_conditions_from_xml
+from src import Weather
+from src.Condition import parse_conditions_from_xml
 # Instantiate BeamNGpy instance running the simulator from the given path,
 # communicating over localhost:64256
 parameters = sys.argv[2:]

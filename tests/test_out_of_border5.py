@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 from beamngpy.sensors import State
 
-POLYGON_SAVE_PATH = "road_polygons.pkl"  # Dateipfad zum Speichern der Polygone
+POLYGON_SAVE_PATH = "../road_polygons_old.pkl"  # Dateipfad zum Speichern der Polygone
 
 
 # Funktion zum Erstellen eines Straßenpolygons aus den Straßenkanten

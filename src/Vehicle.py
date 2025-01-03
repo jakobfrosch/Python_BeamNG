@@ -1,5 +1,19 @@
+import logging
 import xml.etree.ElementTree as ET
 
+def find_aggression(xml_data, entity_ref):
+    # XML-Daten analysieren
+    tree = ET.parse(xml_data)
+    root = tree.getroot()
+
+    # Nach dem gewünschten Element suchen
+    aggression_value = None
+    for private_elem in root.findall(".//Private[@entityRef='" + entity_ref + "']"):
+        for aggression_elem in private_elem.findall(".//Controller[@name='AggressiveController']"):
+            for property_elem in aggression_elem.findall(".//Property[@name='aggression']"):
+                aggression_value = float(property_elem.attrib['value']) if 'value' in property_elem.attrib else None
+                print(aggression_value)
+    return aggression_value
 def find_positions(xml_data, entity_ref):
     # XML-Daten analysieren
     tree = ET.parse(xml_data)
@@ -10,10 +24,14 @@ def find_positions(xml_data, entity_ref):
     for private_elem in root.findall(".//Private[@entityRef='" + entity_ref + "']"):
         for position_elem in private_elem.findall(".//WorldPosition"):
             position = {
-                'x': float(position_elem.attrib['x']),
-                'y': float(position_elem.attrib['y']),
-                'z': float(position_elem.attrib['z']),
-                'h': float(position_elem.attrib['h'])
+                'x': float(
+                    position_elem.attrib['x']) if position_elem is not None and 'x' in position_elem.attrib else None,
+                'y': float(
+                    position_elem.attrib['y']) if position_elem is not None and 'y' in position_elem.attrib else None,
+                'z': float(
+                    position_elem.attrib['z']) if position_elem is not None and 'z' in position_elem.attrib else None,
+                'h': float(
+                    position_elem.attrib['h']) if position_elem is not None and 'h' in position_elem.attrib else None
             }
             positions.append(position)
     return positions
@@ -48,23 +66,39 @@ def extract_vehicle_objects(xml_file):
     # Durchlaufe alle ScenarioObjects
     for scenario_object in root.findall('.//ScenarioObject'):
         obj_name = scenario_object.attrib['name']
-        print("obj_name: " + obj_name)
+        #print("obj_name: " + obj_name)
         positions = find_positions(xml_file, obj_name)
-
+        if not positions:
+            logging.info("Keine Positionen gefunden oder leere Liste.")
+            positions = [None]
         # Extrahiere die Fahrzeugdetails
         vehicle = scenario_object.find('Vehicle')
         if vehicle is not None:
             vehicle_name = vehicle.attrib['name']
             if vehicle_name != "etk800":
-                print("vehicle not found, default vehicle (etk800) used")
+                logging.INFO("vehicle not found, default vehicle (etk800) used")
                 vehicle_name = "etk800"
-            print("vehicleName: " + vehicle_name)
             vehicle_category = vehicle.attrib['vehicleCategory']
-
+            aggression_value = None
+            aggression_value = find_aggression(xml_file, obj_name)
             # Extrahiere Performance-Details
+            performance = None
             performance = vehicle.find('Performance')
-            max_speed = float(performance.attrib['maxSpeed'])
-            max_acceleration = float(performance.attrib['maxAcceleration'])
+            max_speed = None
+            max_acceleration = None
+            if performance is not None:
+                max_acceleration = None
+
+                if 'maxAcceleration' in performance.attrib:
+                    try:
+                        max_acceleration = float(performance.attrib['maxAcceleration'])
+                    except ValueError:
+                        print("maxAcceleration konnte nicht in einen Float umgewandelt werden")
+                if 'maxSpeed' in performance.attrib:
+                    try:
+                        max_speed = float(performance.attrib['maxSpeed'])
+                    except ValueError:
+                        print("maxSpeed konnte nicht in einen Float umgewandelt werden")
 
             # Extrahiere Eigenschaften
             properties = vehicle.find('Properties')
@@ -79,7 +113,9 @@ def extract_vehicle_objects(xml_file):
 
             # Extrahiere Entfernungsinformationen
             traveled_distance_condition = extract_traveled_distance_condition(root, obj_name)
-            onepos = positions[0]
+            onepos = None
+            if positions and len(positions) > 0:
+                onepos = positions[0]
             # Erstelle das Vehicle-Objekt
             vehicle_data = {
                 'name': vehicle_name,
@@ -88,11 +124,12 @@ def extract_vehicle_objects(xml_file):
                 'maxAcceleration': max_acceleration,
                 'type': vehicle_type,
                 'color': vehicle_color,
+                'aggression': aggression_value,
                 'traveledDistanceCondition': traveled_distance_condition,
-                'X': onepos['x'],
-                'Y': onepos['y'],
-                'Z': onepos['z'],
-                'H': onepos['h']
+                'X': onepos['x'] if onepos and 'x' in onepos else None,
+                'Y': onepos['y'] if onepos and 'y' in onepos else None,
+                'Z': onepos['z'] if onepos and 'z' in onepos else None,
+                'H': onepos['h'] if onepos and 'h' in onepos else None
             }
 
             scenario_objects.append({'name': obj_name, 'vehicle': vehicle_data})
@@ -101,5 +138,5 @@ def extract_vehicle_objects(xml_file):
 # Test
 xml_file_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle2.xosc"
 scenario_objects = extract_vehicle_objects(xml_file_path)
-for obj in scenario_objects:
-    print(obj)
+#for obj in scenario_objects:
+    #print(obj)

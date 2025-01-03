@@ -1,7 +1,7 @@
 import os
 import shutil
 import zipfile
-from Weather import Weather
+import logging
 def remove_last_character(filepath):
     with open(filepath, 'r+') as file:
         file.seek(0, os.SEEK_END)
@@ -70,9 +70,24 @@ def fillWeatherInXML(weather, BEAMNG_HOME):
         cloudLayerCoverage = "1"
     else:
         cloudLayerCoverage = "0"
-    if weather.precipitation_type == "rain":
-        num_drops_value = str(int((float(weather.precipitation_intensity)*maxRaindrops)))
-    fogDensity = str(maxFogDensity/float(weather.fog_visualRange))
+    num_drops_value = None
+
+    if weather is not None and hasattr(weather, 'precipitation_type') and hasattr(weather, 'precipitation_intensity'):
+        if weather.precipitation_type == "rain":
+            try:
+                num_drops_value = str(int(float(weather.precipitation_intensity) * maxRaindrops))
+            except (ValueError, TypeError):
+                logging.info("Fehler bei der Berechnung von num_drops_value.")
+    else:
+        logging.info("Wetterdaten sind unvollständig oder weather ist None.")
+
+    fogDensity = None
+
+    if hasattr(weather, 'fog_visualRange') and weather.fog_visualRange:
+        try:
+            fogDensity = str(maxFogDensity / float(weather.fog_visualRange))
+        except (ValueError, ZeroDivisionError):
+            logging.info("Fehler bei der Berechnung von fogDensity")
 
     additional_data = f'''
 "{name}": {{
@@ -126,8 +141,6 @@ def fillWeatherInXML(weather, BEAMNG_HOME):
             }}
         }}
     }}'''
-    #extend_weatherfile_in_zip('C:\\Users\\stefan\\Downloads\\BeamNG.tech.v0.31.3.0\\BeamNG.tech.v0.31.3.0\\gameengine.zip',
-                              #                   'art\\weather\\defaults.json', additional_data)
     replace_weatherfile_in_zip(zipname,'art\\weather\\defaults.json', new_content)
 
 def remove_line_from_file_in_zip(zipname, filename, line_to_remove):

@@ -11,9 +11,9 @@ def time_to_decimal(time_str):
     #print(hour)
     decimal_value = hour + minute / 60 + second / 3600
     decimal_value = decimal_value / 24
-    print(decimal_value)
+    #print(decimal_value)
     #decimal_value = round(decimal_value, 2)
-    print(decimal_value)
+    #print(decimal_value)
     return decimal_value
 class Weather:
     def __init__(self, cloud_state=None, sun_azimuth=None, sun_elevation=None, sun_intensity=None, time_of_day=None, precipitation_type=None, precipitation_intensity=None, fog_visualRange=None):
@@ -50,11 +50,11 @@ class Weather:
                     # Datum in ein datetime-Objekt konvertieren
                     date_object = datetime.strptime(time_of_day_element.get("dateTime"), '%Y-%m-%dT%H:%M:%S')
                     date_object = date_object.strftime('%H:%M:%S')
-                    print(date_object)
+                    #print(date_object)
                     #self.time_of_day = date_object.strftime('%H:%M:%S')
                     self.time_of_day = time_to_decimal(date_object)
 
-                    print(self.time_of_day)
+                    #print(self.time_of_day)
 
 
 

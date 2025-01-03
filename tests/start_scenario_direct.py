@@ -1,30 +1,18 @@
-import math
-import os
-import random
 from time import sleep
 from typing import List, Dict, Tuple
-import beamngpy.tools
-from beamngpy import BeamNGpy, Scenario, Vehicle, Road
-from beamngpy.sensors import Lidar
-from beamngpy.sensors import Radar
-from beamngpy.sensors import State
-from beamngpy.vehicle import Vehicle
 import numpy as np
-from beamngpy.sensors import Damage, Camera
+from beamngpy.sensors import Damage
 import sys
-from beamngpy.sensors import RoadsSensor
 import xml.etree.ElementTree as ET
 
-from Condition import parse_conditions_from_xml
-from Vehicle import extract_vehicle_objects
-from Event import parse_events_from_xml
-from Act import parse_acts_from_xml
-from Weather import Weather, extract_weather_info
-from updateZIP import extend_file_in_zip, fillWeatherInXML, fillWaypointInXML, remove_line_from_file_in_zip, \
-    removeWaypointInXML
+from src.Condition import parse_conditions_from_xml
+from src.Vehicle import extract_vehicle_objects
+from src.Event import parse_events_from_xml
+from src.Act import parse_acts_from_xml
+from src.Weather import extract_weather_info
+from src.updateZIP import fillWeatherInXML, fillWaypointInXML, removeWaypointInXML
 
 import math
-import time
 import pickle
 import os
 from shapely.geometry import Polygon, Point
@@ -33,7 +21,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon as MplPolygon
 from beamngpy.sensors import State
 
-POLYGON_SAVE_PATH = "road_polygons.pkl"  # Dateipfad zum Speichern der Polygone
+POLYGON_SAVE_PATH = "../road_polygons_old.pkl"  # Dateipfad zum Speichern der Polygone
 xml_file_path = "C:\\Users\\stefan\\Downloads\\FollowLeadingVehicle4.xosc"
 VEHICLE_LENGTH = 4.62  # in Meter
 VEHICLE_WIDTH = 1.82  # in Meter
